@@ -10,6 +10,7 @@ Biblioteca pública da Conceito Engenharia para cadastrar famílias BIM e blocos
 - Busca por nome, categoria e código, filtros por tipo, disciplina e situação.
 - Persistência D1 e arquivos R2. Nenhum catálogo fictício ou código SINAPI pré-carregado.
 - Consulta pública, cadastro/edição protegidos por chave de administração mantida apenas em memória no navegador.
+- Toda validação da chave, correta ou incorreta, espera cinco segundos no servidor. A espera também se aplica às gravações protegidas; não limita tentativas simultâneas.
 
 ## Desenvolvimento
 
