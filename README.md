@@ -28,7 +28,13 @@ GitHub Pages é publicado automaticamente pela workflow .github/workflows/pages.
 
 ## Limites da primeira versão
 
+500 cadastros de demonstração (350 famílias BIM e 150 blocos CAD) em seis disciplinas. Identificados como demonstração e sem anexos ou códigos SINAPI oficiais. A carga autenticada POST /api/demo-data é idempotente, preserva cadastros existentes e não sobrescreve itens já editados.
+
 Sem importação automática da base SINAPI, cálculo de preços, visualizador 3D ou integração com a autenticação do CEP Horas. As referências são informadas manualmente e identificadas como pendentes de conferência. A aprovação do elemento não valida automaticamente o vínculo SINAPI.
 Todos os registros e anexos cadastrados ficam públicos; não cadastrar material confidencial.
 A chave dá acesso de gestão completo; a versão inicial não identifica cada editor nem fornece histórico de auditoria.
 Regras visuais permanentes em AGENTS.md e docs/IDENTIDADE-VISUAL.md.
+
+## Catálogo inicial
+
+500 cadastros de simulação (350 famílias BIM e 150 blocos CAD), com nomes CEP- em maiúsculas e sem anexos. Referências: 50 insumos SINAPI consultados no portal oficial ORSE/CEHOP, SE, agosto/2026. Fonte, consulta, código, descrição e unidade: src/sinapi-products.json. Os vínculos permanecem pendentes de conferência; cadastros aguardam revisão técnica. As representações não alteram a especificação do insumo. POST /api/demo-data exige a chave de gestão e insere IDs estáveis sem sobrescrever cadastros existentes.

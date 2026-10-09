@@ -1,6 +1,7 @@
 import html from './index.html';
 import {validateAsset} from './validation.js';
 import {reserveAttempt,finishAttempt,clientHash} from './rate-limit.js';
+import {demoAssets} from './demo-data.js';
 const json=(data,status=200)=>Response.json(data,{status,headers:{'Cache-Control':'no-store'}});
 const decode=row=>({...row,links:JSON.parse(row.links),fileName:row.file_name,updatedAt:row.updated_at,file_key:undefined,file_name:undefined,updated_at:undefined});
 const authorized=async(r,e)=>{
@@ -25,6 +26,17 @@ const handler={async fetch(request,env){
   if(url.pathname==='/api/assets'&&request.method==='GET'){
    const result=await env.DB.prepare('SELECT * FROM assets ORDER BY updated_at DESC').all();
    return json(result.results.map(decode));
+  }
+  if(url.pathname==='/api/demo-data'&&request.method==='POST'){
+   const result=await authorized(request,env);
+   if(result.limited)return limitedResponse(result);
+   if(!result.correct)return json({error:'Acesso de gestão necessário.'},401);
+   const origin=request.headers.get('Origin');if(origin&&origin!==url.origin&&origin!==pagesOrigin)return json({error:'Origem inválida.'},403);
+   const items=demoAssets(),timestamp=new Date().toISOString();
+   for(let start=0;start<items.length;start+=50){
+    await env.DB.batch(items.slice(start,start+50).map(a=>env.DB.prepare('INSERT INTO assets (id,name,kind,discipline,category,version,status,description,links,file_key,file_name,updated_at) VALUES (?,?,?,?,?,?,?,?,?,NULL,NULL,?) ON CONFLICT(id) DO NOTHING').bind(a.id,a.name,a.kind,a.discipline,a.category,a.version,a.status,a.description,JSON.stringify(a.links),timestamp)));
+   }
+   return json({families:350,blocks:150,total:500});
   }
   const match=url.pathname.match(/^\/api\/assets\/([a-f0-9-]{36})(\/file)?$/);
   if(match&&match[2]&&request.method==='GET'){
