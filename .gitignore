@@ -1,0 +1,8 @@
+node_modules/
+dist/
+.sites-runtime/
+.env
+.env.local
+.local/
+admin-access.txt
+*.tar.gz
