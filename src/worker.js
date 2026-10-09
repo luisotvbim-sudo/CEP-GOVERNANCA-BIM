@@ -1,16 +1,27 @@
 import html from './index.html';
 import {validateAsset} from './validation.js';
+import {reserveAttempt,finishAttempt,clientHash} from './rate-limit.js';
 const json=(data,status=200)=>Response.json(data,{status,headers:{'Cache-Control':'no-store'}});
 const decode=row=>({...row,links:JSON.parse(row.links),fileName:row.file_name,updatedAt:row.updated_at,file_key:undefined,file_name:undefined,updated_at:undefined});
 const authorized=async(r,e)=>{
- await new Promise(resolve=>setTimeout(resolve,5000));
- return Boolean(e.EDITOR_KEY&&r.headers.get('Authorization')===`Bearer ${e.EDITOR_KEY}`);
+ const delay=new Promise(resolve=>setTimeout(resolve,5000));
+ const ipHash=await clientHash(r);
+ const reservation=await reserveAttempt(e.DB,ipHash);
+ await delay;
+ if(!reservation.allowed)return {limited:true,retryAfter:reservation.retryAfter};
+ const correct=Boolean(e.EDITOR_KEY&&r.headers.get('Authorization')===`Bearer ${e.EDITOR_KEY}`);
+ await finishAttempt(e.DB,ipHash,correct);
+ return {correct};
 };
+const limitedResponse=result=>Response.json({error:`Muitas tentativas. Tente novamente em ${result.retryAfter} segundos.`},{status:429,headers:{'Retry-After':String(result.retryAfter),'Cache-Control':'no-store'}});
 const pagesOrigin='https://luisotvbim-sudo.github.io';
 const handler={async fetch(request,env){
  const url=new URL(request.url);
  try{
-  if(url.pathname==='/api/session')return await authorized(request,env)?json({editor:true}):json({error:'Chave de administração inválida.'},401);
+  if(url.pathname==='/api/session'){
+   const result=await authorized(request,env);
+   return result.limited?limitedResponse(result):result.correct?json({editor:true}):json({error:'Chave de administração inválida.'},401);
+  }
   if(url.pathname==='/api/assets'&&request.method==='GET'){
    const result=await env.DB.prepare('SELECT * FROM assets ORDER BY updated_at DESC').all();
    return json(result.results.map(decode));
@@ -23,7 +34,9 @@ const handler={async fetch(request,env){
    return new Response(file.body,{headers:{'Content-Type':'application/octet-stream','Content-Disposition':`attachment; filename*=UTF-8''${encodeURIComponent(row.file_name)}`,'X-Content-Type-Options':'nosniff','Cache-Control':'no-store'}});
   }
   if((url.pathname==='/api/assets'&&request.method==='POST')||(match&&!match[2]&&request.method==='PUT')){
-   if(!await authorized(request,env))return json({error:'Entre como administrador para salvar.'},401);
+   const result=await authorized(request,env);
+   if(result.limited)return limitedResponse(result);
+   if(!result.correct)return json({error:'Entre como administrador para salvar.'},401);
    const origin=request.headers.get('Origin');if(origin&&origin!==url.origin&&origin!==pagesOrigin)return json({error:'Origem inválida.'},403);
    if(Number(request.headers.get('Content-Length'))>27*1024*1024)return json({error:'O limite do arquivo é 25 MB.'},413);
    const form=await request.formData();let data;

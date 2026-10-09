@@ -10,7 +10,7 @@ Biblioteca pública da Conceito Engenharia para cadastrar famílias BIM e blocos
 - Busca por nome, categoria e código, filtros por tipo, disciplina e situação.
 - Persistência D1 e arquivos R2. Nenhum catálogo fictício ou código SINAPI pré-carregado.
 - Consulta pública, cadastro/edição protegidos por chave de administração mantida apenas em memória no navegador.
-- Toda validação da chave, correta ou incorreta, espera cinco segundos no servidor. A espera também se aplica às gravações protegidas; não limita tentativas simultâneas.
+- Toda validação da chave espera cinco segundos no servidor. O servidor admite até cinco tentativas por minuto por IP, com reserva atômica no D1 para controlar tentativas simultâneas. Após cinco erros consecutivos, bloqueia o IP por quinze minutos. Cadastro e edição também passam pelo controle; consulta e downloads continuam livres. A resposta 429 informa quando tentar novamente. O IP fornecido pela Cloudflare é armazenado apenas como hash. Redes com IP compartilhado dividem o limite.
 
 ## Desenvolvimento
 

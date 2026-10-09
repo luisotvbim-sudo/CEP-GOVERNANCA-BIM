@@ -1,12 +1,10 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
-import {DatabaseSync} from 'node:sqlite';
-import {readFileSync} from 'node:fs';
+import {database} from './database.mjs';
 import worker from '../dist/server/index.js';
 test('protege escrita, persiste cadastro e disponibiliza anexo público',async()=>{
- const db=new DatabaseSync(':memory:');db.exec(readFileSync('drizzle/0000_curious_rage.sql','utf8'));
- const binding=(sql,args=[])=>({bind:(...a)=>binding(sql,a),first:async()=>db.prepare(sql).get(...args),all:async()=>({results:db.prepare(sql).all(...args)}),run:async()=>db.prepare(sql).run(...args)});
- const files=new Map(),env={DB:{prepare:sql=>binding(sql)},EDITOR_KEY:'test-key',FILES:{put:async(k,v)=>files.set(k,await new Response(v).arrayBuffer()),get:async k=>files.has(k)?{body:files.get(k)}:null,delete:async k=>files.delete(k)}};
+ const {sqlite:db,DB}=database();
+ const files=new Map(),env={DB,EDITOR_KEY:'test-key',FILES:{put:async(k,v)=>files.set(k,await new Response(v).arrayBuffer()),get:async k=>files.has(k)?{body:files.get(k)}:null,delete:async k=>files.delete(k)}};
  const data={name:'Bloco de teste',kind:'Bloco CAD',discipline:'Arquitetura',category:'Teste',version:'1',status:'Em revisão',description:'',links:[]};
  const form=()=>{const f=new FormData();f.set('data',JSON.stringify(data));f.set('file',new File(['test-bytes'],'teste.dwg'));return f};
  const call=(path,init={})=>worker.fetch(new Request('https://example.test'+path,init),env);

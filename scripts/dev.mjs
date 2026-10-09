@@ -1,11 +1,16 @@
 import {createServer} from 'node:http';
 import {DatabaseSync} from 'node:sqlite';
-import {readFile,mkdir,writeFile,unlink} from 'node:fs/promises';
+import {readFile,readdir,mkdir,writeFile,unlink} from 'node:fs/promises';
 import {loadEnvFile} from 'node:process';
 try{loadEnvFile('.env')}catch{}
 await mkdir('.local/files',{recursive:true});
 const db=new DatabaseSync('.local/catalog.sqlite');
-db.exec(await readFile('drizzle/0000_curious_rage.sql','utf8').then(s=>s.replace('CREATE TABLE','CREATE TABLE IF NOT EXISTS')));
+db.exec('CREATE TABLE IF NOT EXISTS local_migrations (name TEXT PRIMARY KEY)');
+for(const name of (await readdir('drizzle')).filter(n=>n.endsWith('.sql')).sort()){
+ if(db.prepare('SELECT name FROM local_migrations WHERE name = ?').get(name))continue;
+ const legacyInitial=name==='0000_curious_rage.sql'&&db.prepare("SELECT name FROM sqlite_master WHERE name='assets'").get();
+ db.exec('BEGIN');try{if(!legacyInitial)db.exec(await readFile('drizzle/'+name,'utf8'));db.prepare('INSERT INTO local_migrations (name) VALUES (?)').run(name);db.exec('COMMIT')}catch(e){db.exec('ROLLBACK');throw e}
+}
 const bind=(sql,args=[])=>({bind:(...a)=>bind(sql,a),first:async()=>db.prepare(sql).get(...args),all:async()=>({results:db.prepare(sql).all(...args)}),run:async()=>db.prepare(sql).run(...args)});
 const files={put:async(key,stream)=>{await writeFile('.local/files/'+key.replaceAll('/','_'),Buffer.from(await new Response(stream).arrayBuffer()))},get:async key=>{try{return {body:await readFile('.local/files/'+key.replaceAll('/','_'))}}catch{return null}},delete:async key=>{try{await unlink('.local/files/'+key.replaceAll('/','_'))}catch{}}};
 const {default:worker}=await import('../dist/server/index.js');
