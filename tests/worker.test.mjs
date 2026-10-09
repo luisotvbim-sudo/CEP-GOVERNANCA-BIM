@@ -12,7 +12,9 @@ test('protege escrita, persiste cadastro e disponibiliza anexo público',async()
  const call=(path,init={})=>worker.fetch(new Request('https://example.test'+path,init),env);
  assert.equal((await call('/api/assets',{method:'POST',body:form()})).status,401);
  assert.equal((await call('/api/assets',{method:'POST',headers:{Authorization:'Bearer test-key',Origin:'https://other.test'},body:form()})).status,403);
- const response=await call('/api/assets',{method:'POST',headers:{Authorization:'Bearer test-key'},body:form()});assert.equal(response.status,201);const asset=await response.json();
+ const preflight=await call('/api/assets',{method:'OPTIONS',headers:{Origin:'https://luisotvbim-sudo.github.io','Access-Control-Request-Method':'POST','Access-Control-Request-Headers':'authorization'}});assert.equal(preflight.status,204);assert.equal(preflight.headers.get('Access-Control-Allow-Origin'),'https://luisotvbim-sudo.github.io');
+ assert.equal((await call('/api/assets',{method:'OPTIONS',headers:{Origin:'https://other.test'}})).status,403);
+ const response=await call('/api/assets',{method:'POST',headers:{Authorization:'Bearer test-key',Origin:'https://luisotvbim-sudo.github.io'},body:form()});assert.equal(response.status,201);assert.equal(response.headers.get('Access-Control-Allow-Origin'),'https://luisotvbim-sudo.github.io');const asset=await response.json();
  const list=await (await call('/api/assets')).json();assert.equal(list.length,1);assert.equal(list[0].name,data.name);assert.equal(list[0].file_key,undefined);
  const download=await call('/api/assets/'+asset.id+'/file');assert.equal(download.status,200);assert.equal(await download.text(),'test-bytes');
  assert.equal((await call('/api/assets/'+asset.id,{method:'PUT',headers:{Authorization:'Bearer test-key'},body:form()})).status,200);assert.equal(files.size,1);

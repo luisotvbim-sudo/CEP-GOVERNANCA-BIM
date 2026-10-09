@@ -3,7 +3,8 @@ import {validateAsset} from './validation.js';
 const json=(data,status=200)=>Response.json(data,{status,headers:{'Cache-Control':'no-store'}});
 const decode=row=>({...row,links:JSON.parse(row.links),fileName:row.file_name,updatedAt:row.updated_at,file_key:undefined,file_name:undefined,updated_at:undefined});
 const authorized=(r,e)=>e.EDITOR_KEY&&r.headers.get('Authorization')===`Bearer ${e.EDITOR_KEY}`;
-export default {async fetch(request,env){
+const pagesOrigin='https://luisotvbim-sudo.github.io';
+const handler={async fetch(request,env){
  const url=new URL(request.url);
  try{
   if(url.pathname==='/api/session')return authorized(request,env)?json({editor:true}):json({error:'Chave de administração inválida.'},401);
@@ -20,7 +21,7 @@ export default {async fetch(request,env){
   }
   if((url.pathname==='/api/assets'&&request.method==='POST')||(match&&!match[2]&&request.method==='PUT')){
    if(!authorized(request,env))return json({error:'Entre como administrador para salvar.'},401);
-   const origin=request.headers.get('Origin');if(origin&&origin!==url.origin)return json({error:'Origem inválida.'},403);
+   const origin=request.headers.get('Origin');if(origin&&origin!==url.origin&&origin!==pagesOrigin)return json({error:'Origem inválida.'},403);
    if(Number(request.headers.get('Content-Length'))>27*1024*1024)return json({error:'O limite do arquivo é 25 MB.'},413);
    const form=await request.formData();let data;
    try{data=validateAsset(JSON.parse(form.get('data')))}catch(e){return json({error:e.message},400)}
@@ -44,4 +45,18 @@ export default {async fetch(request,env){
   if(url.pathname!=='/')return new Response('Página não encontrada',{status:404});
   return new Response(html,{headers:{'Content-Type':'text/html; charset=utf-8','X-Content-Type-Options':'nosniff','Referrer-Policy':'strict-origin-when-cross-origin','Content-Security-Policy':"default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self'; object-src 'none'; base-uri 'none'; frame-ancestors 'none'"}});
  }catch(e){console.error('Falha na operação do catálogo:',e.message);return json({error:'Não foi possível concluir. Seus dados no formulário foram preservados. Tente novamente.'},503)}
+}};
+export default {async fetch(request,env){
+ const origin=request.headers.get('Origin');
+ const isApi=new URL(request.url).pathname.startsWith('/api/');
+ if(isApi&&request.method==='OPTIONS'){
+  if(origin!==pagesOrigin)return json({error:'Origem inválida.'},403);
+  return new Response(null,{status:204,headers:{'Access-Control-Allow-Origin':pagesOrigin,'Access-Control-Allow-Methods':'GET, POST, PUT, OPTIONS','Access-Control-Allow-Headers':'Authorization, Content-Type','Access-Control-Max-Age':'600','Vary':'Origin'}});
+ }
+ const response=await handler.fetch(request,env);
+ if(isApi&&origin===pagesOrigin){
+  const headers=new Headers(response.headers);headers.set('Access-Control-Allow-Origin',pagesOrigin);headers.set('Vary','Origin');
+  return new Response(response.body,{status:response.status,headers});
+ }
+ return response;
 }};

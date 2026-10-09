@@ -21,7 +21,9 @@ No Sites, configure EDITOR_KEY como segredo. O arquivo local `admin-access.txt` 
 
 Worker ESM em dist/server/index.js, manifesto em .openai/hosting.json e migrações Drizzle em drizzle/.
 O repositório GitHub preserva o código. O Sites mantém uma origem de publicação separada.
-Página: https://cep-governanca-bim.blue-book-5770.chatgpt.site
+Página pública: https://luisotvbim-sudo.github.io/CEP-GOVERNANCA-BIM/
+Backend e interface alternativa: https://cep-governanca-bim.blue-book-5770.chatgpt.site
+GitHub Pages é publicado automaticamente pela workflow .github/workflows/pages.yml. A interface é gerada por scripts/build-pages.mjs, que configura a origem da API sem incluir credenciais. O Worker permite CORS exclusivamente para https://luisotvbim-sudo.github.io; autenticação continua obrigatória para gravações.
 
 ## Limites da primeira versão
 
