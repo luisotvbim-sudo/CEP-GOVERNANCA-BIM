@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {demoAssets} from '../src/demo-data.js';
 import products from '../src/sinapi-products.json' with {type:'json'};
 test('509 cadastros CEP em maiúsculas com referências SINAPI consultadas',()=>{
- const items=demoAssets();assert.equal(items.length,509);
+ const items=demoAssets();assert.equal(items.length,509);assert.equal(items.filter(a=>a.status==='Em revisão').length,36);assert.equal(items.filter(a=>a.status==='Aprovado').length,473);
  assert.equal(items.filter(a=>a.kind==='Família BIM').length,351);
  assert.equal(items.filter(a=>a.kind==='Bloco CAD').length,158);
  assert.equal(new Set(items.map(a=>a.id)).size,509);

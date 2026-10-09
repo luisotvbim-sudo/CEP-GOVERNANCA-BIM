@@ -8,7 +8,7 @@ test('carga repetida mantém GUIDs e total 351 BIM, 158 CAD e 413 vínculos',asy
  const call=()=>worker.fetch(new Request('https://example.test/api/demo-data',{method:'POST',headers:{Authorization:'Bearer seed-test'}}),env);
  assert.equal((await call()).status,200);
  const rows=sqlite.prepare('SELECT * FROM assets').all();
- assert.equal(rows.length,509);assert.equal(rows.filter(a=>a.kind==='Família BIM').length,351);
+ assert.equal(rows.length,509);assert.equal(rows.filter(a=>a.status==='Em revisão').length,36);assert.equal(rows.filter(a=>a.status==='Aprovado').length,473);assert.equal(rows.filter(a=>a.kind==='Família BIM').length,351);
  assert.equal(rows.filter(a=>a.kind==='Bloco CAD').length,158);
  assert.equal(rows.filter(a=>JSON.parse(a.links).length).length,413);
  assert.equal(new Set(rows.map(a=>a.guid)).size,509);

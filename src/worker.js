@@ -34,7 +34,7 @@ const handler={async fetch(request,env){
    const origin=request.headers.get('Origin');if(origin&&origin!==url.origin&&origin!==pagesOrigin)return json({error:'Origem inválida.'},403);
    const items=demoAssets(),timestamp=new Date().toISOString();
    for(let start=0;start<items.length;start+=50){
-    await env.DB.batch(items.slice(start,start+50).map(a=>env.DB.prepare('INSERT INTO assets (id,name,kind,discipline,category,version,status,description,links,file_key,file_name,updated_at,guid) VALUES (?,?,?,?,?,?,?,?,?,NULL,NULL,?,?) ON CONFLICT(id) DO UPDATE SET links=excluded.links,description=excluded.description').bind(a.id,a.name,a.kind,a.discipline,a.category,a.version,a.status,a.description,JSON.stringify(a.links),timestamp,crypto.randomUUID().toUpperCase())));
+    await env.DB.batch(items.slice(start,start+50).map(a=>env.DB.prepare('INSERT INTO assets (id,name,kind,discipline,category,version,status,description,links,file_key,file_name,updated_at,guid) VALUES (?,?,?,?,?,?,?,?,?,NULL,NULL,?,?) ON CONFLICT(id) DO UPDATE SET links=excluded.links,description=excluded.description,status=excluded.status').bind(a.id,a.name,a.kind,a.discipline,a.category,a.version,a.status,a.description,JSON.stringify(a.links),timestamp,crypto.randomUUID().toUpperCase())));
    }
    return json({families:351,blocks:158,total:509,linked:413});
   }

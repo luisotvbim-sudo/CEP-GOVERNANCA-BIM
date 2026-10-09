@@ -16,5 +16,5 @@ export function demoAssets(){
  const families=products.flatMap(p=>familyVariants.map((variant,v)=>create('Família BIM',p,variant,v)));
  const blocks=products.filter((_,i)=>i%5<3).flatMap(p=>cadVariants.map((variant,v)=>create('Bloco CAD',p,variant,v)));
  const extras=[create('Família BIM',products[3],'AS BUILT',7),...products.slice(10,18).map((p,v)=>create('Bloco CAD',p,'DETALHE EXECUTIVO',v))];
- return [...families,...blocks,...extras].map((a,i)=>({...a,links:i<413?a.links:[],description:i<413?a.description:a.description.replace(/ Referência SINAPI.*? Conferir/,' Conferir')}));
+ return [...families,...blocks,...extras].map((a,i)=>({...a,status:i<36?'Em revisão':'Aprovado',links:i<413?a.links:[],description:i<413?a.description:a.description.replace(/ Referência SINAPI.*? Conferir/,' Conferir')}));
 }
