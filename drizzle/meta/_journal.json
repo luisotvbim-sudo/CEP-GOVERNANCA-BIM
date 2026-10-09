@@ -15,6 +15,13 @@
       "when": 1791511328373,
       "tag": "0001_spotty_bucky",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1791521331055,
+      "tag": "0002_serious_retro_girl",
+      "breakpoints": true
     }
   ]
 }

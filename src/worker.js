@@ -34,9 +34,9 @@ const handler={async fetch(request,env){
    const origin=request.headers.get('Origin');if(origin&&origin!==url.origin&&origin!==pagesOrigin)return json({error:'Origem inválida.'},403);
    const items=demoAssets(),timestamp=new Date().toISOString();
    for(let start=0;start<items.length;start+=50){
-    await env.DB.batch(items.slice(start,start+50).map(a=>env.DB.prepare('INSERT INTO assets (id,name,kind,discipline,category,version,status,description,links,file_key,file_name,updated_at) VALUES (?,?,?,?,?,?,?,?,?,NULL,NULL,?) ON CONFLICT(id) DO NOTHING').bind(a.id,a.name,a.kind,a.discipline,a.category,a.version,a.status,a.description,JSON.stringify(a.links),timestamp)));
+    await env.DB.batch(items.slice(start,start+50).map(a=>env.DB.prepare('INSERT INTO assets (id,name,kind,discipline,category,version,status,description,links,file_key,file_name,updated_at,guid) VALUES (?,?,?,?,?,?,?,?,?,NULL,NULL,?,?) ON CONFLICT(id) DO UPDATE SET links=excluded.links,description=excluded.description').bind(a.id,a.name,a.kind,a.discipline,a.category,a.version,a.status,a.description,JSON.stringify(a.links),timestamp,crypto.randomUUID().toUpperCase())));
    }
-   return json({families:350,blocks:150,total:500});
+   return json({families:351,blocks:158,total:509,linked:413});
   }
   const match=url.pathname.match(/^\/api\/assets\/([a-f0-9-]{36})(\/file)?$/);
   if(match&&match[2]&&request.method==='GET'){
@@ -56,15 +56,19 @@ const handler={async fetch(request,env){
    const id=match?.[1]||crypto.randomUUID();
    const previous=match?await env.DB.prepare('SELECT * FROM assets WHERE id = ?').bind(id).first():null;
    if(match&&!previous)return json({error:'Cadastro não encontrado.'},404);
+   const guid=data.guid||previous?.guid||crypto.randomUUID().toUpperCase();
+   const duplicate=await env.DB.prepare('SELECT id FROM assets WHERE guid = ? AND id != ?').bind(guid,id).first();
+   if(duplicate)return json({error:'Este GUID já pertence a outro elemento.'},400);
+   data.guid=guid;
    const file=form.get('file');let fileKey=previous?.file_key||null,fileName=previous?.file_name||null,newKey=null;
    if(file&&file.size){
     if(file.size>25*1024*1024)return json({error:'O limite do arquivo é 25 MB.'},413);
     if(!(data.kind==='Família BIM'?/\.(rfa|rvt|ifc)$/i:/\.(dwg|dxf)$/i).test(file.name))return json({error:'O formato do arquivo não corresponde ao tipo selecionado.'},400);
     newKey=`assets/${id}/${crypto.randomUUID()}`;await env.FILES.put(newKey,file.stream());fileKey=newKey;fileName=file.name;
    }
-   if(!fileKey)return json({error:'Anexe o arquivo da família ou do bloco.'},400);
+   if(!fileKey&&!previous)return json({error:'Anexe o arquivo da família ou do bloco.'},400);
    const updatedAt=new Date().toISOString();
-   try{await env.DB.prepare('INSERT INTO assets (id,name,kind,discipline,category,version,status,description,links,file_key,file_name,updated_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?) ON CONFLICT(id) DO UPDATE SET name=excluded.name,kind=excluded.kind,discipline=excluded.discipline,category=excluded.category,version=excluded.version,status=excluded.status,description=excluded.description,links=excluded.links,file_key=excluded.file_key,file_name=excluded.file_name,updated_at=excluded.updated_at').bind(id,data.name,data.kind,data.discipline,data.category,data.version,data.status,data.description,JSON.stringify(data.links),fileKey,fileName,updatedAt).run();}
+   try{await env.DB.prepare('INSERT INTO assets (id,name,kind,discipline,category,version,status,description,links,file_key,file_name,updated_at,guid) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?) ON CONFLICT(id) DO UPDATE SET name=excluded.name,kind=excluded.kind,discipline=excluded.discipline,category=excluded.category,version=excluded.version,status=excluded.status,description=excluded.description,links=excluded.links,file_key=excluded.file_key,file_name=excluded.file_name,updated_at=excluded.updated_at,guid=excluded.guid').bind(id,data.name,data.kind,data.discipline,data.category,data.version,data.status,data.description,JSON.stringify(data.links),fileKey,fileName,updatedAt,guid).run();}
    catch(e){if(newKey)await env.FILES.delete(newKey);throw e}
    if(newKey&&previous?.file_key)try{await env.FILES.delete(previous.file_key)}catch(e){console.error('Falha na limpeza do anexo anterior')}
    return json({id,...data,fileName,updatedAt},match?200:201);

@@ -1,0 +1,23 @@
+import {test} from 'node:test';
+import assert from 'node:assert/strict';
+import {database} from './database.mjs';
+import worker from '../dist/server/index.js';
+test('carga repetida mantém GUIDs e total 351 BIM, 158 CAD e 413 vínculos',async()=>{
+ const {sqlite,DB}=database();
+ const env={DB,EDITOR_KEY:'seed-test'};
+ const call=()=>worker.fetch(new Request('https://example.test/api/demo-data',{method:'POST',headers:{Authorization:'Bearer seed-test'}}),env);
+ assert.equal((await call()).status,200);
+ const rows=sqlite.prepare('SELECT * FROM assets').all();
+ assert.equal(rows.length,509);assert.equal(rows.filter(a=>a.kind==='Família BIM').length,351);
+ assert.equal(rows.filter(a=>a.kind==='Bloco CAD').length,158);
+ assert.equal(rows.filter(a=>JSON.parse(a.links).length).length,413);
+ assert.equal(new Set(rows.map(a=>a.guid)).size,509);
+ assert.ok(rows.every(a=>/^[A-F0-9]{8}-[A-F0-9]{4}-4[A-F0-9]{3}-[89AB][A-F0-9]{3}-[A-F0-9]{12}$/.test(a.guid)));
+ assert.equal((await call()).status,200);
+ assert.deepEqual(sqlite.prepare('SELECT * FROM assets').all(),rows);
+ assert.throws(()=>sqlite.prepare('UPDATE assets SET guid=? WHERE id=?').run(rows[0].guid,rows[1].id),/UNIQUE/);
+ const form=new FormData();form.set('data',JSON.stringify({...rows[0],guid:'12345678-1234-4ABC-8DEF-123456789ABC',links:JSON.parse(rows[0].links)}));
+ const update=await worker.fetch(new Request('https://example.test/api/assets/'+rows[0].id,{method:'PUT',headers:{Authorization:'Bearer seed-test'},body:form}),env);
+ assert.equal(update.status,200);assert.equal((await update.json()).guid,'12345678-1234-4ABC-8DEF-123456789ABC');
+ sqlite.close();
+});

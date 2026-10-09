@@ -2,6 +2,10 @@ export const disciplines=['Arquitetura','Estrutura','Hidrossanitário','Elétric
 export const states='AC AL AP AM BA CE DF ES GO MA MT MS MG PA PB PR PE PI RJ RN RS RO RR SC SP SE TO'.split(' ');
 export function validateAsset(data){
  const clean={};
+ if(data.guid!==undefined&&data.guid!==null&&data.guid!==''){
+  if(typeof data.guid!=='string'||!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(data.guid.trim()))throw new Error('Informe um GUID válido no formato XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX.');
+  clean.guid=data.guid.trim().toUpperCase();
+ }
  for(const [key,max] of Object.entries({name:160,category:100,version:40,description:3000})){
   if(typeof data[key]!=='string'||data[key].trim().length>max)throw new Error('Verifique os campos do cadastro.');
   clean[key]=data[key].trim();

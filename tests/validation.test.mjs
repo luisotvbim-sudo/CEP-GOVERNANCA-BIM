@@ -7,3 +7,8 @@ test('mantém zeros do código e exige conferência independente da aprovação'
 test('rejeita referências incompletas e mês ou UF inválidos',()=>{for(const invalid of [{uf:'ZZ'},{reference:'2026-13'},{code:'abc'},{description:''},{unit:''}]){const a=base();a.links=[{...link(),...invalid}];assert.throws(()=>validateAsset(a))}});
 test('evita duplicação do mesmo vínculo',()=>{const a=base();a.links=[link(),link()];assert.throws(()=>validateAsset(a),/repetidos/)});
 test('permite cadastro sem SINAPI e rejeita tipo desconhecido',()=>{assert.deepEqual(validateAsset(base()).links,[]);assert.throws(()=>validateAsset({...base(),kind:'Qualquer arquivo'}))});
+test('valida e normaliza GUID sem exigir preenchimento manual',()=>{
+ assert.equal(validateAsset({...base(),guid:'a1b2c3d4-1234-4abc-8def-112233445566'}).guid,'A1B2C3D4-1234-4ABC-8DEF-112233445566');
+ assert.throws(()=>validateAsset({...base(),guid:'incorreto'}),/GUID/);
+ assert.equal(validateAsset({...base(),guid:''}).guid,undefined);
+});

@@ -12,10 +12,10 @@ test('protege escrita, persiste cadastro e disponibiliza anexo público',async()
  assert.equal((await call('/api/assets',{method:'POST',headers:{Authorization:'Bearer test-key',Origin:'https://other.test'},body:form()})).status,403);
  const preflight=await call('/api/assets',{method:'OPTIONS',headers:{Origin:'https://luisotvbim-sudo.github.io','Access-Control-Request-Method':'POST','Access-Control-Request-Headers':'authorization'}});assert.equal(preflight.status,204);assert.equal(preflight.headers.get('Access-Control-Allow-Origin'),'https://luisotvbim-sudo.github.io');
  assert.equal((await call('/api/assets',{method:'OPTIONS',headers:{Origin:'https://other.test'}})).status,403);
- const response=await call('/api/assets',{method:'POST',headers:{Authorization:'Bearer test-key',Origin:'https://luisotvbim-sudo.github.io'},body:form()});assert.equal(response.status,201);assert.equal(response.headers.get('Access-Control-Allow-Origin'),'https://luisotvbim-sudo.github.io');const asset=await response.json();
- const list=await (await call('/api/assets')).json();assert.equal(list.length,1);assert.equal(list[0].name,data.name);assert.equal(list[0].file_key,undefined);
+ const response=await call('/api/assets',{method:'POST',headers:{Authorization:'Bearer test-key',Origin:'https://luisotvbim-sudo.github.io'},body:form()});assert.equal(response.status,201);assert.equal(response.headers.get('Access-Control-Allow-Origin'),'https://luisotvbim-sudo.github.io');const asset=await response.json();assert.match(asset.guid,/^[A-F0-9-]{36}$/);
+ const list=await (await call('/api/assets')).json();assert.equal(list.length,1);assert.equal(list[0].name,data.name);assert.equal(list[0].guid,asset.guid);assert.equal(list[0].file_key,undefined);
  const download=await call('/api/assets/'+asset.id+'/file');assert.equal(download.status,200);assert.equal(await download.text(),'test-bytes');
- assert.equal((await call('/api/assets/'+asset.id,{method:'PUT',headers:{Authorization:'Bearer test-key'},body:form()})).status,200);assert.equal(files.size,1);
+ assert.equal((await call('/api/assets/'+asset.id,{method:'PUT',headers:{Authorization:'Bearer test-key'},body:form()})).status,200);assert.equal(files.size,1);assert.equal((await (await call("/api/assets")).json())[0].guid,asset.guid);
  data.kind='Família BIM';assert.equal((await call('/api/assets',{method:'POST',headers:{Authorization:'Bearer test-key'},body:form()})).status,400);
  db.close();
 });
