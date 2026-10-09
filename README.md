@@ -2,6 +2,8 @@
 
 Biblioteca pública da Conceito Engenharia para cadastrar famílias BIM e blocos CAD, com múltiplos vínculos SINAPI por elemento.
 
+Contexto de trabalho: [BIM 5D e orçamentação](docs/CONTEXTO-BIM-5D.md), com conceitos de insumos não modelados, quantitativos, especificações e composições.
+
 ## Recursos
 
 - Cadastro e edição com disciplina, categoria, versão, situação e orientações.
